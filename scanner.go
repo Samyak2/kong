@@ -2,6 +2,7 @@ package kong
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -98,8 +99,25 @@ func (t Token) InferredType() TokenType {
 // A parseable value is either a value typed token, or an untyped token NOT starting with a hyphen.
 func (t Token) IsValue() bool {
 	tt := t.InferredType()
-	return tt.IsAny(FlagValueToken, ShortFlagTailToken, PositionalArgumentToken) ||
-		(tt == UntypedToken && !strings.HasPrefix(t.String(), "-"))
+
+	if tt.IsAny(FlagValueToken, ShortFlagTailToken, PositionalArgumentToken) {
+		return true
+	}
+
+	if tt == UntypedToken {
+		s := t.String()
+
+		if !strings.HasPrefix(s, "-") {
+			return true
+		}
+
+		// check if it's a number after the hyphen
+		if _, err := strconv.Atoi(s[1:]); err == nil {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Scanner is a stack-based scanner over command-line tokens.
